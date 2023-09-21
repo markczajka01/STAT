@@ -36,6 +36,8 @@ library(tidyr)     # new tidy functions
 
 load(file = here("data", "tech_data.Rdata"))
 
+raw_biom <-  read_csv(file = here("data", "AHS11biomedical.csv"))
+
 aboriginal_cohort <- read_csv(file = here("data", "aboriginal_cohort.csv"))
 
 tech_nutr_by_person_joined = 
@@ -57,13 +59,15 @@ aboriginal_cohort_filtered =
 required_columns <- c(
             'data_source',
             'LDLNTR',
+            'LDLRESB',
             'WHOLGR1N',
             'WHOLGR1N_PROP',
             'REFGRA1N',
             'SYSTOL',
             'SLPTIME',
             'BMISC',
-            'AGEC')
+            'AGEC',
+            'EIBMR1')
 
 merged_data <- 
   tech_nutr_by_person_joined %>% 
@@ -71,12 +75,22 @@ merged_data <-
   rbind(select(aboriginal_cohort_filtered, required_columns)) %>% 
   mutate(LDLNTR = droplevels(LDLNTR))
 
-merged_data %>% drop_na() %>% nrow
+merged_data <- merged_data %>% drop_na()
 
 
 merged_data %>% 
   ggplot(aes(x = AGEC, col = data_source)) +
   geom_density()
+
+merged_data <- merged_data %>% 
+  mutate(below_goldberg = EIBMR1 < 0.9)
+
+merged_data %>% 
+  group_by(data_source) %>% 
+  summarise(num_goldberg_dropped = sum(below_goldberg),
+            num_total = n(),
+            goldberg_dropped_pct = num_goldberg_dropped/num_total)
+
 
 
 merged_data %>% 
