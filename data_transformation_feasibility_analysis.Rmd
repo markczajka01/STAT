@@ -34,9 +34,9 @@ library(tidyr)     # new tidy functions
 ```{r}
 
 
-load(file = here("data", "tech_data.Rdata"))
 
-aboriginal_cohort <- read_csv(file = here("data", "aboriginal_cohort.csv"))
+
+
 
 tech_nutr_by_person_joined = 
   tech_nutr %>% 
@@ -63,7 +63,10 @@ required_columns <- c(
             'SYSTOL',
             'SLPTIME',
             'BMISC',
-            'AGEC')
+            'AGEC',
+            'PHDCMWBC','SMKDAILY'
+              )
+
 
 merged_data <- 
   tech_nutr_by_person_joined %>% 
@@ -128,7 +131,7 @@ required_columns_glucose <- c(
             'SYSTOL',
             'SLPTIME',
             'BMISC',
-            'AGEC')
+            'AGEC','SMKDAILY')
 
 merged_data_glucose <- 
   tech_nutr_by_person_joined_glucose %>% 
@@ -141,6 +144,11 @@ merged_data_glucose <-
 
 merged_data_glucose %>% 
   count(data_source, GLUCFPD) 
+
+```
+
+
+```{r}
 
 ```
 
