@@ -52,10 +52,10 @@ aboriginal_cohort_filtered =
   aboriginal_cohort %>% 
   filter(AGEEC >= 18,
          LDLNTR %in% c(1,2)) %>% 
-  rename(AGEC = AGEEC) %>% 
+  rename(AGEC = AGEEC,EXLWTBC=EXLWTIMC) %>% 
   mutate(data_source = 'Aboriginal',
          WHOLGR1N_PROP = WHOLGR1N/GRAINS1N)
-
+#variable in ahs EXLWTIMC, abbo EXLWTBC
 required_columns <- c(
             'data_source',
             'LDLNTR',
@@ -67,7 +67,7 @@ required_columns <- c(
             'SLPTIME',
             'BMISC',
             'AGEC',
-            'EIBMR1','PHDCMWBC','ENERGYT1','ENRGYT1','SMKDAILY'
+            'EIBMR1','PHDCMWBC','ENERGYT1','ENRGYT1','SMKDAILY','EXLWTBC'
 )
 
 merged_data <- 
