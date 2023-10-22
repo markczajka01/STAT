@@ -34,11 +34,11 @@ library(tidyr)     # new tidy functions
 ```{r}
 
 
+load(file = here("data", "tech_data.Rdata"))
 
+raw_biom <-  read_csv(file = here("data", "AHS11biomedical.csv"))
 
-raw_biom <-  read.csv("AHS11biomedical.csv")
-
-aboriginal_cohort <- read.csv("aboriginal_cohort.csv")
+aboriginal_cohort <- read_csv(file = here("data", "aboriginal_cohort.csv"))
 
 tech_nutr_by_person_joined = 
   tech_nutr %>% 
@@ -52,10 +52,10 @@ aboriginal_cohort_filtered =
   aboriginal_cohort %>% 
   filter(AGEEC >= 18,
          LDLNTR %in% c(1,2)) %>% 
-  rename(AGEC = AGEEC,EXLWTBC=EXLWTIMC) %>% 
+  rename(AGEC = AGEEC) %>% 
   mutate(data_source = 'Aboriginal',
          WHOLGR1N_PROP = WHOLGR1N/GRAINS1N)
-#variable in ahs EXLWTIMC, abbo EXLWTBC
+
 required_columns <- c(
             'data_source',
             'LDLNTR',
@@ -67,8 +67,7 @@ required_columns <- c(
             'SLPTIME',
             'BMISC',
             'AGEC',
-            'EIBMR1','PHDCMWBC','ENERGYT1','ENRGYT1','SMKDAILY','EXLWTBC'
-)
+            'EIBMR1')
 
 merged_data <- 
   tech_nutr_by_person_joined %>% 
@@ -84,8 +83,7 @@ merged_data %>%
   geom_density()
 
 merged_data <- merged_data %>% 
-  mutate(below_goldberg = EIBMR1 < 0.9,
-         energy_prop=(ENERGYT1-ENRGYT1)/ENERGYT1)
+  mutate(below_goldberg = EIBMR1 < 0.9)
 
 merged_data %>% 
   group_by(data_source) %>% 
@@ -158,10 +156,5 @@ merged_data_glucose <-
 merged_data_glucose %>% 
   count(data_source, GLUCFPD) 
 
-```
-
-
-```{r}
-merged_data2=data.frame(merged_data,tech_nutr_by_person_joined_glucose$EXLWTBC)
 ```
 
