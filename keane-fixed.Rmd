@@ -1,0 +1,264 @@
+---
+title: "data_transformation"
+author: "Group"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# Default knitting options
+knitr::opts_chunk$set(echo=TRUE, # Echo the code
+                      tidy=TRUE, # Nicely dity up code
+                      warning=FALSE, # No warnings please 
+                      message=FALSE) # No messages please
+
+options(warn=-1) 
+
+# Suppress start up warnings when loading libraries
+library <- function(...) {
+  suppressPackageStartupMessages(base::library(...))
+}
+```
+
+
+```{r libraries}
+# Load in all libraries
+library(tidyverse)
+library(here)      # directory referencing
+library(readxl)    # reading Excel files
+library(janitor)   # data cleaning 
+library(stringr)   # string manimpuationf
+library(tidyr) # new tidy functions
+library(MASS)
+library(nnet)
+library(randomForest)
+library(caret)
+
+mark <- read_csv("Mark-is-really-cool")
+mark_extended <- read_csv("Mark-is-really-really-cool")
+```
+
+
+# Load
+```{r}
+
+
+tech_nutr_by_person_joined = 
+  tech_nutr %>% 
+  inner_join(tech_biom, by = "ABSPID") %>% 
+  filter(!is.na(LDLNTR),
+         AGEC >= 18) %>% 
+  mutate(data_source = 'AHS',
+         WHOLGR1N_PROP = WHOLGR1N/GRAINS1N)
+
+aboriginal_cohort_filtered =
+  aboriginal_cohort %>% 
+  filter(AGEEC >= 18,
+         LDLNTR %in% c(1,2)) %>% 
+  rename(AGEC = AGEEC,EXLWTBC=EXLWTIMC) %>% 
+  mutate(data_source = 'Aboriginal',
+         WHOLGR1N_PROP = WHOLGR1N/GRAINS1N)
+#variable in ahs EXLWTIMC, abbo EXLWTBC
+required_columns <- c(
+            'data_source',
+            'LDLNTR',
+            'LDLRESB',
+            'WHOLGR1N',
+            'WHOLGR1N_PROP',
+            'REFGRA1N',
+            'SYSTOL',
+            'SLPTIME',
+            'BMISC',
+            'AGEC',
+            'EIBMR1','PHDCMWBC','ENERGYT1','ENRGYT1','SMKDAILY','EXLWTBC', 'HDLCHREB'
+)
+
+merged_data <- 
+  tech_nutr_by_person_joined %>% 
+  select(required_columns) %>% 
+  rbind(select(aboriginal_cohort_filtered, required_columns)) %>% 
+ mutate(LDLNTR = droplevels(LDLNTR))
+
+merged_data <- merged_data %>% drop_na()
+
+
+merged_data %>% 
+  ggplot(aes(x = AGEC, col = data_source)) +
+  geom_density()
+
+merged_data <- merged_data %>% 
+  mutate(below_goldberg = EIBMR1 < 0.9,
+         energy_prop=(ENERGYT1-ENRGYT1)/ENERGYT1)
+
+merged_data %>% 
+  group_by(data_source) %>% 
+  summarise(num_goldberg_dropped = sum(below_goldberg),
+            num_total = n(),
+            goldberg_dropped_pct = num_goldberg_dropped/num_total)
+
+
+
+merged_data %>% 
+  ggplot(aes(x = WHOLGR1N, col = data_source)) +
+  geom_density()
+
+merged_data %>% 
+  ggplot(aes(x = WHOLGR1N_PROP, col = data_source)) +
+  geom_density()
+```
+
+
+# GLM
+```{r}
+model_glm <- glm(LDLNTR ~ WHOLGR1N_PROP + BMISC + AGEC + SLPTIME + SYSTOL, family = "binomial", data = merged_data)
+summary(model_glm)
+
+merged_data %>% 
+  ggplot(aes(x = LDLNTR, col = data_source)) +
+  geom_density()
+```
+
+
+#LDLRESB
+## ordinal
+```{r}
+mark_extended$LDLRESB <- as.factor(mark_extended$LDLRESB)
+
+ordinal_1 <- polr(LDLRESB ~ WHOLGR1N + WHOLGR1N_PROP + REFGRA1N + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC + HDLCHREB + CHOLRESB, data = mark_extended)
+summary(ordinal_1)
+ctable <- coef(summary(ordinal_1))
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+ctable <- cbind(ctable, "p value" = p)
+ctable
+```
+
+
+## multinomial
+```{r}
+nom_nom_1 <- multinom(LDLRESB ~ WHOLGR1N + WHOLGR1N_PROP + REFGRA1N + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC + HDLCHREB + CHOLRESB, data = mark_extended, trace=FALSE)
+summary(nom_nom_1)
+
+# calculate p-values
+zvalues <- summary(nom_nom_1)$coefficients / summary(nom_nom_1)$standard.errors
+pnorm(abs(zvalues), lower.tail=FALSE)*2
+```
+
+
+## RF
+```{r}
+merged_data$LDLRESB <- as.numeric(merged_data$LDLRESB)
+
+# grouping LDLRESB
+mark <- subset(merged_data, LDLRESB != '97', LDLRESB != '98')
+
+classes <-  c(merged_data$LDLRESB)
+
+breaks <- c(-Inf, 2, 5, 8)
+
+label <- c("Ridiculous", "Ludicrous", "Plaid")
+
+merged_data$grouped_LDLRESB <- cut(merged_data$LDLRESB, breaks = breaks, labels = label)
+
+train_indices <- sample(1:nrow(merged_data), 0.8 * nrow(merged_data)) 
+train_data <- merged_data[train_indices, ]
+test_data <- merged_data[-train_indices, ]
+
+forest_gump <- randomForest(grouped_LDLRESB ~ WHOLGR1N + WHOLGR1N_PROP + REFGRA1N + BMISC + AGEC + SLPTIME + SYSTOL, data = train_data, ntree = 500, importance = TRUE)
+predictions <- predict(forest_gump, newdata = test_data)
+
+forest_gump
+```
+
+
+```{r}
+varImpPlot(forest_gump, main="Model Performance Predicting LDLRESB Response")
+```
+
+
+# LDLNTR
+## multinomial
+```{r}
+nom_nom_2 <- multinom(LDLNTR ~ WHOLGR1N + WHOLGR1N_PROP + REFGRA1N + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC + HDLCHREB + CHOLRESB, data = mark_extended, trace=FALSE)
+summary(nom_nom_2)
+
+zvalues <- summary(nom_nom_2)$coefficients / summary(nom_nom_2)$standard.errors
+
+# calculate p-values
+pnorm(abs(zvalues), lower.tail=FALSE)*2
+```
+
+## RF
+```{r}
+forest_gump_sequel <- randomForest(LDLNTR ~ WHOLGR1N + WHOLGR1N_PROP + REFGRA1N + BMISC + AGEC + SLPTIME + SYSTOL, data = train_data, ntree = 500, importance = TRUE)
+predictions <- predict(forest_gump_sequel, newdata = test_data)
+
+forest_gump_sequel
+```
+
+```{r}
+varImpPlot(forest_gump_sequel, main="Model Performance Predicting LDLNTR Response")
+```
+
+
+
+# HDLCHREB
+
+## ordinal
+```{r}
+mark_extended$LDLRESB <- as.factor(mark_extended$LDLRESB)
+mark_extended$HDLCHREB <- as.factor(mark_extended$HDLCHREB)
+
+ordinal_3 <- polr(LDLRESB ~ WHOLGR1N + WHOLGR1N_PROP + REFGRA1N + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC + HDLCHREB, data = mark_extended)
+summary(ordinal_3)
+ctable <- coef(summary(ordinal_3))
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+ctable <- cbind(ctable, "p value" = p)
+ctable
+```
+
+
+## multinomial on HDLCHREB
+```{r}
+nom_nom_3 <- multinom(LDLRESB ~ WHOLGR1N + WHOLGR1N_PROP + REFGRA1N + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC + HDLCHREB, data = mark_extended, trace=FALSE)
+summary(nom_nom_3)
+
+# calculate p-values
+zvalues <- summary(nom_nom_3)$coefficients / summary(nom_nom_3)$standard.errors
+pnorm(abs(zvalues), lower.tail=FALSE)*2
+```
+
+## RF
+```{r}
+mark_extended =na.omit(mark_extended)
+```
+
+```{r}
+train_indices_1 <- sample(1:nrow(mark_extended), 0.8 * nrow(mark_extended)) 
+train_data_1 <- mark_extended[train_indices_1, ]
+test_data_1 <- mark_extended[-train_indices_1, ]
+
+forest_gump_trilogy <- randomForest(LDLRESB ~ WHOLGR1N + WHOLGR1N_PROP + REFGRA1N + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC + HDLCHREB, data = train_data_1, ntree = 500, importance = TRUE)
+predictions <- predict(forest_gump_trilogy, newdata = test_data_1)
+
+forest_gump_trilogy
+```
+
+
+# CHOLRESB
+your_data$CHOLRESB <- as.factor(your_data$CHOLRESB)
+
+## ordinal
+```{r}
+mark_extended$CHOLRESB <- as.factor(mark_extended$CHOLRESB)
+
+```
+
+```{r}
+ordinal_4 <- polr(mark_extended$CHOLRESB ~ WHOLGR1N + WHOLGR1N_PROP + REFGRA1N + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC + HDLCHREB, data = mark_extended)
+summary(ordinal_3)
+ctable <- coef(summary(ordinal_3))
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+ctable <- cbind(ctable, "p value" = p)
+ctable
+```
+
