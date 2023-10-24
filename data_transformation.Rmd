@@ -7,10 +7,10 @@ output: html_document
 
 ```{r setup, include=FALSE}
 # Default knitting options
-knitr::opts_chunk$set(echo=TRUE, # Echo the code
-                      tidy=TRUE, # Nicely dity up code
-                      warning=FALSE, # No warnings please 
-                      message=FALSE) # No messages please
+knitr::opts_chunk$set(echo=TRUE, 
+                      tidy=TRUE, 
+                      warning=FALSE, 
+                      message=FALSE) 
 
 options(warn=-1) 
 
@@ -23,7 +23,7 @@ library <- function(...) {
 ```{r libraries}
 # Load in all libraries
 library(tidyverse)
-library(here)      # directory referencing
+library(here) # directory referencing
 ```
 
 
