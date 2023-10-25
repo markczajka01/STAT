@@ -1,0 +1,73 @@
+---
+title: "Model Outputs (used for presentation etc)"
+author: "Group"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+# Default knitting options
+knitr::opts_chunk$set(echo=FALSE,
+                      # echo=TRUE, # Echo the code
+                      # tidy=TRUE, # Nicely dity up code
+                      warning=FALSE, # No warnings please 
+                      message=FALSE) # No messages please
+
+options(warn=-1) 
+
+# Suppress start up warnings when loading libraries
+library <- function(...) {
+  suppressPackageStartupMessages(base::library(...))
+}
+```
+
+```{r libraries}
+# Load in all libraries
+library(tidyverse)
+library(here) # directory referencing
+library(MASS)
+library(nnet)
+# library(randomForest)
+library(caret)
+library(stargazer) # used by John for nice display of model output
+library(knitr) # used for nice display of tables
+```
+
+
+```{r load data}
+load(file = here("data", "model_data.Rdata"))
+```
+
+
+### GLM
+```{r, results="hide"}
+model_glm <- glm(LDLNTR ~  WHOLGR1N + REFGRA1N + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC, family = "binomial", data = model_data)
+```
+
+```{r,results="asis", eval=TRUE, echo=FALSE}
+stargazer(model_glm, type = "html")
+```
+
+
+### Ordinal Regression
+```{r,results="asis", eval=TRUE, echo=FALSE}
+ordinal_1 <- polr(LDLRESB ~ WHOLGR1N + REFGRA1N + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC, data = model_data)
+ctable <- coef(summary(ordinal_1))
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+ctable <- cbind(ctable, "p value" = p)
+
+kable(ctable,digits=2, format = "pipe")
+```
+
+## Multinomial Regression
+```{r}
+nom_nom_1 <- multinom(LDLRESB ~ WHOLGR1N + REFGRA1N + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC, data = model_data, trace=FALSE)
+
+kable(coef(summary(nom_nom_1)), digits = 4, format="pipe", caption = "Coefficients")
+
+# calculate p-values
+zvalues <- summary(nom_nom_1)$coefficients / summary(nom_nom_1)$standard.errors
+kable(pnorm(abs(zvalues), lower.tail=FALSE)*2, digits = 2, format="pipe", caption = "P values")
+
+```

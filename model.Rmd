@@ -24,15 +24,22 @@ load(file = here("data", "model_data.Rdata"))
 
 # GLM
 ```{r}
-model_glm <- glm(LDLNTR ~ WHOLGR1N + REFGRA1N + BMISC + AGEC + SLPTIME + SYSTOL, family = "binomial", data = model_data)
+model_glm <- glm(LDLNTR ~  WHOLGR1N + REFGRA1N + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC, family = "binomial", data = model_data)
 summary(model_glm)
+
+ctable <- coef(summary(model_glm))
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+ctable <- cbind(ctable, "p value" = Pr(>|z|))
+ctable
+
+
 ```
 
 # LDLRESB
 ## ordinal
 ```{r}
 
-ordinal_1 <- polr(LDLRESB ~ WHOLGR1N + REFGRA1N + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC + HDLCHREB + CHOLRESB, data = model_data)
+ordinal_1 <- polr(LDLRESB ~ WHOLGR1N + REFGRA1N + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC, data = model_data)
 summary(ordinal_1)
 ctable <- coef(summary(ordinal_1))
 p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
@@ -43,12 +50,15 @@ ctable
 
 ## multinomial
 ```{r}
-nom_nom_1 <- multinom(LDLRESB ~ WHOLGR1N + REFGRA1N + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC + HDLCHREB + CHOLRESB, data = model_data, trace=FALSE)
+nom_nom_1 <- multinom(LDLRESB ~ WHOLGR1N + REFGRA1N + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC, data = model_data, trace=FALSE)
 summary(nom_nom_1)
+
+coef(summary(nom_nom_1))
 
 # calculate p-values
 zvalues <- summary(nom_nom_1)$coefficients / summary(nom_nom_1)$standard.errors
 pnorm(abs(zvalues), lower.tail=FALSE)*2
+
 ```
 
 
