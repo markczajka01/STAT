@@ -1,24 +1,9 @@
 ---
-title: "data_transformation"
+title: "Data Transformation Code"
 author: "Group"
 date: "`r Sys.Date()`"
 output: html_document
 ---
-
-```{r setup, include=FALSE}
-# Default knitting options
-knitr::opts_chunk$set(echo=TRUE, 
-                      tidy=TRUE, 
-                      warning=FALSE, 
-                      message=FALSE) 
-
-options(warn=-1) 
-
-# Suppress start up warnings when loading libraries
-library <- function(...) {
-  suppressPackageStartupMessages(base::library(...))
-}
-```
 
 ```{r libraries}
 # Load in all libraries
@@ -39,19 +24,36 @@ required_columns <- c(
             'SLPTIME',
             'BMISC',
             'AGEC',
-            'EIBMR1')
+            'EIBMR1',
+            'EIBMR1',
+            'PHDCMWBC',
+            'ENERGYT1',
+            'ENRGYT1',
+            'SMKDAILY',
+            'EXLWTBC', 
+            'HDLCHREB',
+            'CHOLRESB')
 
 model_data <-  
   tech_nutr %>%
   inner_join(tech_biom, by = "ABSPID") %>% 
-  select(required_columns) %>% 
+  dplyr::select(required_columns) %>% 
   filter(AGEC >= 18,
          # dropping observations below Goldberg cut-off
          EIBMR1 >= 0.9) %>% 
-  mutate(LDLNTR = droplevels(LDLNTR)) 
+  mutate(LDLNTR = droplevels(LDLNTR),
+         LDLRESB = droplevels(LDLRESB),
+         CHOLRESB = droplevels(CHOLRESB),
+         HDLCHREB = droplevels(HDLCHREB),
+         EXLWTBC = as.numeric(EXLWTBC),
+         SYSTOL = as.numeric(SYSTOL),
+         SLPTIME = as.numeric(SLPTIME),
+         AGEC = as.numeric(AGEC)
+         ) %>% 
+  # dropping observations with NA for any variable, leaves us with 2424 rows
+  drop_na()
 
-# dropping observations with NA for any variable, leaves us with 2424 rows
-model_data <- model_data %>% drop_na()
+glimpse(model_data) 
 ```
 
 
