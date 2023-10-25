@@ -18,8 +18,6 @@ library(caret)
 # Load data from data_transformation.Rmd
 ```{r}
 load(file = here("data", "model_data.Rdata"))
-# test
-
 ```
 
 
