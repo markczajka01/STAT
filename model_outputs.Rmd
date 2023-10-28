@@ -6,6 +6,7 @@ output: html_document
 ---
 
 
+
 ```{r setup, include=FALSE}
 # Default knitting options
 knitr::opts_chunk$set(echo=FALSE,
@@ -32,6 +33,7 @@ library(nnet)
 library(caret)
 library(stargazer) # used by John for nice display of model output
 library(knitr) # used for nice display of tables
+library(pROC)
 ```
 
 
@@ -71,3 +73,12 @@ zvalues <- summary(nom_nom_1)$coefficients / summary(nom_nom_1)$standard.errors
 kable(pnorm(abs(zvalues), lower.tail=FALSE)*2, digits = 2, format="pipe", caption = "P values")
 
 ```
+#ROC FOR GLM
+```{r}
+predicted_probabilities <- predict(model_glm, type = "response")
+roc_data <- roc(model_data$LDLNTR, predicted_probabilities)
+plot(roc_data, main = "ROC Curve", col = "blue")
+auc_score <- auc(roc_data)
+print(paste("AUC:", auc_score))
+```
+
