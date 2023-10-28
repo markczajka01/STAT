@@ -7,6 +7,8 @@ output: html_document
 
 
 
+
+
 ```{r setup, include=FALSE}
 # Default knitting options
 knitr::opts_chunk$set(echo=FALSE,
@@ -34,6 +36,8 @@ library(caret)
 library(stargazer) # used by John for nice display of model output
 library(knitr) # used for nice display of tables
 library(pROC)
+library(rms)
+library(vcd)
 ```
 
 
@@ -81,4 +85,15 @@ plot(roc_data, main = "ROC Curve", col = "blue")
 auc_score <- auc(roc_data)
 print(paste("AUC:", auc_score))
 ```
+
+```{r}
+#5 highest leverage points
+plot(model_glm,which=4,id.n=5)
+```
+
+#EValuation for Ordinal Regression
+```{r}
+vcd::vcd(ordinal_1)
+```
+
 
