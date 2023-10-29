@@ -32,7 +32,10 @@ required_columns <- c(
             'SMKDAILY',
             'EXLWTBC', 
             'HDLCHREB',
-            'CHOLRESB')
+            'CHOLNTR',
+            'CHOLRESB',
+            'FIBRPER1',
+            'FIBRPER2')
 
 model_data <-  
   tech_nutr %>%
@@ -43,17 +46,23 @@ model_data <-
          EIBMR1 >= 0.9) %>% 
   mutate(LDLNTR = droplevels(LDLNTR),
          LDLRESB = droplevels(LDLRESB),
-         CHOLRESB = droplevels(CHOLRESB),
+         # abnormal HDL when HDLCHREB = 1 (< 1 mmol)
+         HDLCHREB_BINOM = as.factor(as.numeric(HDLCHREB) == 1),
          HDLCHREB = droplevels(HDLCHREB),
+         CHOLNTR = droplevels(CHOLNTR),
+         CHOLRESB = droplevels(CHOLRESB),
          EXLWTBC = as.numeric(EXLWTBC),
          SYSTOL = as.numeric(SYSTOL),
          SLPTIME = as.numeric(SLPTIME),
-         AGEC = as.numeric(AGEC)
+         AGEC = as.numeric(AGEC),
+         # avg energy from fibre across the two days
+         FIBRPER = (FIBRPER1 + FIBRPER2)/2
          ) %>% 
-  # dropping observations with NA for any variable, leaves us with 2424 rows
+  # removing the per-day fibre variables
+  dplyr::select(-FIBRPER1, -FIBRPER2) %>%
+  # dropping observations with NA for any variable, leaves us with 2405 rows
   drop_na()
 
-glimpse(model_data) 
 ```
 
 

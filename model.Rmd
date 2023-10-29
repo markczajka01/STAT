@@ -13,10 +13,6 @@ library(MASS)
 library(nnet)
 library(randomForest)
 library(caret)
-
-# hello
-# test
-
 ```
 
 # Load data from data_transformation.Rmd
@@ -24,25 +20,16 @@ library(caret)
 load(file = here("data", "model_data.Rdata"))
 ```
 
-
-# GLM
+# Part 1 of 3: LDL
+## 1.1 GLM on LDLNTR
 ```{r}
-model_glm <- glm(LDLNTR ~  WHOLGR1N + REFGRA1N + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC, family = "binomial", data = model_data)
+model_glm <- glm(LDLNTR ~  WHOLGR1N + REFGRA1N + FIBRPER + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC, family = "binomial", data = model_data)
 summary(model_glm)
-
-ctable <- coef(summary(model_glm))
-p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
-ctable <- cbind(ctable, "p value" = Pr(>|z|))
-ctable
-
-
 ```
 
-# LDLRESB
-## ordinal
+## 1.2 Ordinal on LDLRESB
 ```{r}
-
-ordinal_1 <- polr(LDLRESB ~ WHOLGR1N + REFGRA1N + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC, data = model_data)
+ordinal_1 <- polr(LDLRESB ~ WHOLGR1N + REFGRA1N + FIBRPER + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC, data = model_data)
 summary(ordinal_1)
 ctable <- coef(summary(ordinal_1))
 p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
@@ -51,18 +38,78 @@ ctable
 ```
 
 
-## multinomial
+## 1.3 multinomial on LDLRESB
 ```{r}
-nom_nom_1 <- multinom(LDLRESB ~ WHOLGR1N + REFGRA1N + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC, data = model_data, trace=FALSE)
+nom_nom_1 <- multinom(LDLRESB ~ WHOLGR1N + REFGRA1N + FIBRPER + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC, data = model_data, trace=FALSE)
 summary(nom_nom_1)
-
 coef(summary(nom_nom_1))
-
 # calculate p-values
 zvalues <- summary(nom_nom_1)$coefficients / summary(nom_nom_1)$standard.errors
 pnorm(abs(zvalues), lower.tail=FALSE)*2
-
 ```
+
+# Part 2 of 3: HDL
+## 2.1 GLM on HDLCHREB_BINOM
+```{r}
+model_glm <- glm(HDLCHREB_BINOM ~  WHOLGR1N + REFGRA1N + FIBRPER + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC, family = "binomial", data = model_data)
+summary(model_glm)
+```
+
+
+## 2.2 Ordinal on HDLCHREB
+```{r}
+ordinal_1 <- polr(HDLCHREB ~ WHOLGR1N + REFGRA1N + FIBRPER + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC, data = model_data)
+summary(ordinal_1)
+ctable <- coef(summary(ordinal_1))
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+ctable <- cbind(ctable, "p value" = p)
+ctable
+```
+
+
+## 2.3 multinomial on HDLCHREB
+```{r}
+nom_nom_1 <- multinom(HDLCHREB ~ WHOLGR1N + REFGRA1N + FIBRPER + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC, data = model_data, trace=FALSE)
+summary(nom_nom_1)
+coef(summary(nom_nom_1))
+# calculate p-values
+zvalues <- summary(nom_nom_1)$coefficients / summary(nom_nom_1)$standard.errors
+pnorm(abs(zvalues), lower.tail=FALSE)*2
+```
+
+
+# Part 3 of 3: CHOL (Total cholesterol)
+## 3.1 GLM on CHOLNTR
+```{r}
+model_glm <- glm(CHOLNTR ~  WHOLGR1N + REFGRA1N + FIBRPER + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC, family = "binomial", data = model_data)
+summary(model_glm)
+```
+
+
+## 3.2 Ordinal on CHOLRESB
+```{r}
+ordinal_1 <- polr(CHOLRESB ~ WHOLGR1N + REFGRA1N + FIBRPER + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC, data = model_data)
+summary(ordinal_1)
+ctable <- coef(summary(ordinal_1))
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+ctable <- cbind(ctable, "p value" = p)
+ctable
+```
+
+
+## 3.3 multinomial on CHOLRESB
+```{r}
+nom_nom_1 <- multinom(CHOLRESB ~ WHOLGR1N + REFGRA1N + FIBRPER + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC, data = model_data, trace=FALSE)
+summary(nom_nom_1)
+coef(summary(nom_nom_1))
+# calculate p-values
+zvalues <- summary(nom_nom_1)$coefficients / summary(nom_nom_1)$standard.errors
+pnorm(abs(zvalues), lower.tail=FALSE)*2
+```
+
+
+
+
 
 
 ## RF
