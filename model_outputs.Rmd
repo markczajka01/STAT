@@ -38,6 +38,7 @@ library(knitr) # used for nice display of tables
 library(pROC)
 library(rms)
 library(vcd)
+library(boot)
 ```
 
 
@@ -93,7 +94,12 @@ plot(model_glm,which=4,id.n=5)
 
 #EValuation for Ordinal Regression
 ```{r}
-vcd::vcd(ordinal_1)
+summary(ordinal_1)
+
 ```
+
+
+
+
 
 
