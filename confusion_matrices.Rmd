@@ -1,0 +1,222 @@
+---
+title: "Model Performance"
+author: "Group"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+# Default knitting options
+knitr::opts_chunk$set(echo=TRUE, # Whether to echo the code
+                      tidy=TRUE, # Nicely tidy up code
+                      warning=FALSE, # No warnings please 
+                      message=FALSE) # No messages please
+
+options(warn=-1) 
+
+# Suppress start up warnings when loading libraries
+library <- function(...) {
+  suppressPackageStartupMessages(base::library(...))
+}
+```
+
+```{r libraries}
+# Load in all libraries
+library(tidyverse)
+library(here) # directory referencing
+library(stargazer) # used by John for nice display of model output
+library(knitr) # used for nice display of tables
+```
+
+```{r load data and models}
+load(file = here("data", "model_data.Rdata"))
+load(file = "models.Rdata")
+```
+
+# Part 1 of 3: LDL
+## 1.1 GLM on LDLNTR
+```{r}
+predicted_glm_LDL <- predict(glm_LDL, model_data, type = "response")
+predicted_glm_LDL <- as.factor(round(predicted_glm_LDL, 0) + 1)
+caret::confusionMatrix(predicted_glm_LDL, model_data$LDLNTR)
+```
+
+## 1.2 Ordinal on LDLRESB
+```{r}
+predicted_tbl_LDL_o <- 
+  predict(ordinal_LDL, model_data, type = "p") %>% 
+  as.tibble() %>% 
+  mutate(id = row_number()) %>% 
+  pivot_longer(cols = 1:8) %>% 
+  group_by(id) %>% 
+  mutate(max_value = max(value),
+         is_predicted = max_value == value) %>% 
+  filter(is_predicted) %>% 
+  mutate(LDLNTR_predicted = if_else(name > 5, 2, 1))
+
+LDLRESB_predicted_o <- 
+  as.factor(as.vector(predicted_tbl_LDL_o$name)) %>% 
+  # add all levels in case some are missing
+  forcats::fct_expand("1", "2", "3", "4", "5", "6", "7", "8")
+
+LDLNTR_predicted_o <- 
+  as.factor(as.vector(predicted_tbl_LDL_o$LDLNTR_predicted)) %>% 
+  forcats::fct_expand("1", "2")
+
+caret::confusionMatrix(LDLNTR_predicted_o, model_data$LDLNTR)
+caret::confusionMatrix(LDLRESB_predicted_o, model_data$LDLRESB)
+```
+
+
+## 1.3 multinomial on LDLRESB
+```{r}
+predicted_tbl_LDL_m <- 
+  predict(multinom_LDL, model_data, type = "p") %>% 
+  as.tibble() %>% 
+  mutate(id = row_number()) %>% 
+  pivot_longer(cols = 1:8) %>% 
+  group_by(id) %>% 
+  mutate(max_value = max(value),
+         is_predicted = max_value == value) %>% 
+  filter(is_predicted) %>% 
+  mutate(LDLNTR_predicted = if_else(name > 5, 2, 1))
+
+LDLRESB_predicted_m <- 
+  as.factor(as.vector(predicted_tbl_LDL_m$name)) %>% 
+  # add all levels in case some are missing
+  forcats::fct_expand("1", "2", "3", "4", "5", "6", "7", "8")
+
+LDLNTR_predicted_m <- 
+  as.factor(as.vector(predicted_tbl_LDL_m$LDLNTR_predicted)) %>% 
+  forcats::fct_expand("1", "2")
+
+caret::confusionMatrix(LDLNTR_predicted_m, model_data$LDLNTR)
+caret::confusionMatrix(LDLRESB_predicted_m, model_data$LDLRESB)
+```
+
+# Part 2 of 3: HDL
+## 2.1 GLM on HDLCHREB_BINOM
+```{r}
+predicted_glm_HDL <- predict(glm_HDL, model_data, type = "response")
+predicted_glm_HDL <- as.factor(predicted_glm_HDL > 0.5)
+caret::confusionMatrix(predicted_glm_HDL, model_data$HDLCHREB_BINOM)
+```
+
+
+## 2.2 Ordinal on HDLCHREB
+```{r}
+predicted_tbl_HDL_o <- 
+  predict(ordinal_HDL, model_data, type = "p") %>% 
+  as.tibble() %>% 
+  mutate(id = row_number()) %>% 
+  pivot_longer(cols = 1:6) %>% 
+  group_by(id) %>% 
+  mutate(max_value = max(value),
+         is_predicted = max_value == value) %>% 
+  filter(is_predicted) %>% 
+  mutate(HDLNTR_predicted = if_else(name > 5, 2, 1))
+
+HDLRESB_predicted_o <- 
+  as.factor(as.vector(predicted_tbl_HDL_o$name)) %>% 
+  # add all levels in case some are missing
+  forcats::fct_expand("1", "2", "3", "4", "5", "6")
+
+HDLNTR_predicted_o <- 
+  as.factor(as.vector(2 == predicted_tbl_HDL_o$HDLNTR_predicted)) 
+
+caret::confusionMatrix(HDLNTR_predicted_o, model_data$HDLCHREB_BINOM)
+caret::confusionMatrix(HDLRESB_predicted_o, model_data$HDLCHREB)
+```
+
+
+## 2.3 multinomial on HDLCHREB
+```{r}
+predicted_tbl_HDL_m <- 
+  predict(multinom_HDL, model_data, type = "p") %>% 
+  as.tibble() %>% 
+  mutate(id = row_number()) %>% 
+  pivot_longer(cols = 1:6) %>% 
+  group_by(id) %>% 
+  mutate(max_value = max(value),
+         is_predicted = max_value == value) %>% 
+  filter(is_predicted) %>% 
+  mutate(HDLNTR_predicted = if_else(name > 5, 2, 1))
+
+HDLRESB_predicted_m <- 
+  as.factor(as.vector(predicted_tbl_HDL_m$name)) %>% 
+  # add all levels in case some are missing
+  forcats::fct_expand("1", "2", "3", "4", "5", "6")
+
+HDLNTR_predicted_m <- 
+  as.factor(as.vector(2 == predicted_tbl_HDL_m$HDLNTR_predicted)) 
+
+caret::confusionMatrix(HDLNTR_predicted_m, model_data$HDLCHREB_BINOM)
+caret::confusionMatrix(HDLRESB_predicted_m, model_data$HDLCHREB)
+
+```
+
+
+# Part 3 of 3: CHOL (Total cholesterol)
+## 3.1 GLM on CHOLNTR
+```{r}
+predicted_glm_CHOL <- predict(glm_CHOL, model_data, type = "response")
+predicted_glm_CHOL <- as.factor(round(predicted_glm_CHOL, 0) + 1)
+caret::confusionMatrix(predicted_glm_CHOL, model_data$CHOLNTR)
+```
+
+
+## 3.2 Ordinal on CHOLRESB
+```{r}
+
+predicted_tbl_CHOL_o <- 
+  predict(ordinal_CHOL, model_data, type = "p") %>% 
+  as.tibble() %>% 
+  mutate(id = row_number()) %>% 
+  pivot_longer(cols = 1:8) %>% 
+  group_by(id) %>% 
+  mutate(max_value = max(value),
+         is_predicted = max_value == value) %>% 
+  filter(is_predicted) %>% 
+  mutate(CHOLNTR_predicted = if_else(name > 5, 2, 1))
+
+CHOLRESB_predicted_o <- 
+  as.factor(as.vector(predicted_tbl_CHOL_o$name)) %>% 
+  # add all levels in case some are missing
+  forcats::fct_expand("1", "2", "3", "4", "5", "6", "7", "8")
+
+CHOLNTR_predicted_o <- 
+  as.factor(as.vector(predicted_tbl_CHOL_o$CHOLNTR_predicted)) %>% 
+  forcats::fct_expand("1", "2")
+
+caret::confusionMatrix(CHOLNTR_predicted_o, model_data$CHOLNTR)
+caret::confusionMatrix(CHOLRESB_predicted_o, model_data$CHOLRESB)
+```
+
+
+## 3.3 multinomial on CHOLRESB
+```{r}
+predicted_tbl_CHOL_m <- 
+  predict(multinom_CHOL, model_data, type = "p") %>% 
+  as.tibble() %>% 
+  mutate(id = row_number()) %>% 
+  pivot_longer(cols = 1:8) %>% 
+  group_by(id) %>% 
+  mutate(max_value = max(value),
+         is_predicted = max_value == value) %>% 
+  filter(is_predicted) %>% 
+  mutate(CHOLNTR_predicted = if_else(name > 5, 2, 1))
+
+CHOLRESB_predicted_m <- 
+  as.factor(as.vector(predicted_tbl_CHOL_m$name)) %>% 
+  # add all levels in case some are missing
+  forcats::fct_expand("1", "2", "3", "4", "5", "6", "7", "8")
+
+CHOLNTR_predicted_m <- 
+  as.factor(as.vector(predicted_tbl_CHOL_m$CHOLNTR_predicted)) %>% 
+  forcats::fct_expand("1", "2")
+
+caret::confusionMatrix(CHOLNTR_predicted_m, model_data$CHOLNTR)
+caret::confusionMatrix(CHOLRESB_predicted_m, model_data$CHOLRESB)
+```
+
