@@ -49,7 +49,7 @@ load(file = here("data", "model_data.Rdata"))
 
 ### GLM
 ```{r, results="hide"}
-model_glm <- glm(LDLNTR ~  WHOLGR1N + REFGRA1N + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC, family = "binomial", data = model_data)
+model_glm <- glm(LDL_status ~  whole_grain + refined_grain + BMI + age + sleep_time + systolic_blood_pressure + exercise_duration, family = "binomial", data = model_data)
 ```
 
 ```{r,results="asis", eval=TRUE, echo=FALSE}
@@ -59,7 +59,7 @@ stargazer(model_glm, type = "html")
 
 ### Ordinal Regression
 ```{r,results="asis", eval=TRUE, echo=FALSE}
-ordinal_1 <- polr(LDLRESB ~ WHOLGR1N + REFGRA1N + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC, data = model_data)
+ordinal_1 <- polr(LDL_band ~ whole_grain + refined_grain + BMI + age + sleep_time + systolic_blood_pressure + exercise_duration, data = model_data)
 ctable <- coef(summary(ordinal_1))
 p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
 ctable <- cbind(ctable, "p value" = p)
@@ -69,7 +69,7 @@ kable(ctable,digits=2, format = "pipe")
 
 ## Multinomial Regression
 ```{r}
-nom_nom_1 <- multinom(LDLRESB ~ WHOLGR1N + REFGRA1N + BMISC + AGEC + SLPTIME + SYSTOL + EXLWTBC, data = model_data, trace=FALSE)
+nom_nom_1 <- multinom(LDL_band ~ whole_grain + refined_grain + BMI + age + sleep_time + systolic_blood_pressure + exercise_duration, data = model_data, trace=FALSE)
 
 kable(coef(summary(nom_nom_1)), digits = 4, format="pipe", caption = "Coefficients")
 
@@ -81,7 +81,7 @@ kable(pnorm(abs(zvalues), lower.tail=FALSE)*2, digits = 2, format="pipe", captio
 #ROC FOR GLM
 ```{r}
 predicted_probabilities <- predict(model_glm, type = "response")
-roc_data <- roc(model_data$LDLNTR, predicted_probabilities)
+roc_data <- roc(model_data$LDL_status, predicted_probabilities)
 plot(roc_data, main = "ROC Curve", col = "blue")
 auc_score <- auc(roc_data)
 print(paste("AUC:", auc_score))

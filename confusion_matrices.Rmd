@@ -35,14 +35,14 @@ load(file = "models.Rdata")
 ```
 
 # Part 1 of 3: LDL
-## 1.1 GLM on LDLNTR
+## 1.1 GLM on LDL_status
 ```{r}
 predicted_glm_LDL <- predict(glm_LDL, model_data, type = "response")
 predicted_glm_LDL <- as.factor(round(predicted_glm_LDL, 0) + 1)
-caret::confusionMatrix(predicted_glm_LDL, model_data$LDLNTR)
+caret::confusionMatrix(predicted_glm_LDL, model_data$LDL_status)
 ```
 
-## 1.2 Ordinal on LDLRESB
+## 1.2 Ordinal on LDL_band
 ```{r}
 predicted_tbl_LDL_o <- 
   predict(ordinal_LDL, model_data, type = "p") %>% 
@@ -53,23 +53,23 @@ predicted_tbl_LDL_o <-
   mutate(max_value = max(value),
          is_predicted = max_value == value) %>% 
   filter(is_predicted) %>% 
-  mutate(LDLNTR_predicted = if_else(name > 5, 2, 1))
+  mutate(LDL_status_predicted = if_else(name > 5, 2, 1))
 
-LDLRESB_predicted_o <- 
+LDL_band_predicted_o <- 
   as.factor(as.vector(predicted_tbl_LDL_o$name)) %>% 
   # add all levels in case some are missing
   forcats::fct_expand("1", "2", "3", "4", "5", "6", "7", "8")
 
-LDLNTR_predicted_o <- 
-  as.factor(as.vector(predicted_tbl_LDL_o$LDLNTR_predicted)) %>% 
+LDL_status_predicted_o <- 
+  as.factor(as.vector(predicted_tbl_LDL_o$LDL_status_predicted)) %>% 
   forcats::fct_expand("1", "2")
 
-caret::confusionMatrix(LDLNTR_predicted_o, model_data$LDLNTR)
-caret::confusionMatrix(LDLRESB_predicted_o, model_data$LDLRESB)
+caret::confusionMatrix(LDL_status_predicted_o, model_data$LDL_status)
+caret::confusionMatrix(LDL_band_predicted_o, model_data$LDL_band)
 ```
 
 
-## 1.3 multinomial on LDLRESB
+## 1.3 multinomial on LDL_band
 ```{r}
 predicted_tbl_LDL_m <- 
   predict(multinom_LDL, model_data, type = "p") %>% 
@@ -80,31 +80,31 @@ predicted_tbl_LDL_m <-
   mutate(max_value = max(value),
          is_predicted = max_value == value) %>% 
   filter(is_predicted) %>% 
-  mutate(LDLNTR_predicted = if_else(name > 5, 2, 1))
+  mutate(LDL_status_predicted = if_else(name > 5, 2, 1))
 
-LDLRESB_predicted_m <- 
+LDL_band_predicted_m <- 
   as.factor(as.vector(predicted_tbl_LDL_m$name)) %>% 
   # add all levels in case some are missing
   forcats::fct_expand("1", "2", "3", "4", "5", "6", "7", "8")
 
-LDLNTR_predicted_m <- 
-  as.factor(as.vector(predicted_tbl_LDL_m$LDLNTR_predicted)) %>% 
+LDL_status_predicted_m <- 
+  as.factor(as.vector(predicted_tbl_LDL_m$LDL_status_predicted)) %>% 
   forcats::fct_expand("1", "2")
 
-caret::confusionMatrix(LDLNTR_predicted_m, model_data$LDLNTR)
-caret::confusionMatrix(LDLRESB_predicted_m, model_data$LDLRESB)
+caret::confusionMatrix(LDL_status_predicted_m, model_data$LDL_status)
+caret::confusionMatrix(LDL_band_predicted_m, model_data$LDL_band)
 ```
 
 # Part 2 of 3: HDL
-## 2.1 GLM on HDLCHREB_BINOM
+## 2.1 GLM on HDL_status
 ```{r}
 predicted_glm_HDL <- predict(glm_HDL, model_data, type = "response")
 predicted_glm_HDL <- as.factor(predicted_glm_HDL > 0.5)
-caret::confusionMatrix(predicted_glm_HDL, model_data$HDLCHREB_BINOM)
+caret::confusionMatrix(predicted_glm_HDL, model_data$HDL_status)
 ```
 
 
-## 2.2 Ordinal on HDLCHREB
+## 2.2 Ordinal on HDL_band
 ```{r}
 predicted_tbl_HDL_o <- 
   predict(ordinal_HDL, model_data, type = "p") %>% 
@@ -125,12 +125,12 @@ HDLRESB_predicted_o <-
 HDLNTR_predicted_o <- 
   as.factor(as.vector(2 == predicted_tbl_HDL_o$HDLNTR_predicted)) 
 
-caret::confusionMatrix(HDLNTR_predicted_o, model_data$HDLCHREB_BINOM)
-caret::confusionMatrix(HDLRESB_predicted_o, model_data$HDLCHREB)
+caret::confusionMatrix(HDLNTR_predicted_o, model_data$HDL_status)
+caret::confusionMatrix(HDLRESB_predicted_o, model_data$HDL_band)
 ```
 
 
-## 2.3 multinomial on HDLCHREB
+## 2.3 multinomial on HDL_band
 ```{r}
 predicted_tbl_HDL_m <- 
   predict(multinom_HDL, model_data, type = "p") %>% 
@@ -151,22 +151,22 @@ HDLRESB_predicted_m <-
 HDLNTR_predicted_m <- 
   as.factor(as.vector(2 == predicted_tbl_HDL_m$HDLNTR_predicted)) 
 
-caret::confusionMatrix(HDLNTR_predicted_m, model_data$HDLCHREB_BINOM)
-caret::confusionMatrix(HDLRESB_predicted_m, model_data$HDLCHREB)
+caret::confusionMatrix(HDLNTR_predicted_m, model_data$HDL_status)
+caret::confusionMatrix(HDLRESB_predicted_m, model_data$HDL_band)
 
 ```
 
 
 # Part 3 of 3: CHOL (Total cholesterol)
-## 3.1 GLM on CHOLNTR
+## 3.1 GLM on total_cholesterol_status
 ```{r}
 predicted_glm_CHOL <- predict(glm_CHOL, model_data, type = "response")
 predicted_glm_CHOL <- as.factor(round(predicted_glm_CHOL, 0) + 1)
-caret::confusionMatrix(predicted_glm_CHOL, model_data$CHOLNTR)
+caret::confusionMatrix(predicted_glm_CHOL, model_data$total_cholesterol_status)
 ```
 
 
-## 3.2 Ordinal on CHOLRESB
+## 3.2 Ordinal on total_cholesterol_band
 ```{r}
 
 predicted_tbl_CHOL_o <- 
@@ -178,23 +178,23 @@ predicted_tbl_CHOL_o <-
   mutate(max_value = max(value),
          is_predicted = max_value == value) %>% 
   filter(is_predicted) %>% 
-  mutate(CHOLNTR_predicted = if_else(name > 5, 2, 1))
+  mutate(total_cholesterol_status_predicted = if_else(name > 5, 2, 1))
 
-CHOLRESB_predicted_o <- 
+total_cholesterol_band_predicted_o <- 
   as.factor(as.vector(predicted_tbl_CHOL_o$name)) %>% 
   # add all levels in case some are missing
   forcats::fct_expand("1", "2", "3", "4", "5", "6", "7", "8")
 
-CHOLNTR_predicted_o <- 
-  as.factor(as.vector(predicted_tbl_CHOL_o$CHOLNTR_predicted)) %>% 
+total_cholesterol_status_predicted_o <- 
+  as.factor(as.vector(predicted_tbl_CHOL_o$total_cholesterol_status_predicted)) %>% 
   forcats::fct_expand("1", "2")
 
-caret::confusionMatrix(CHOLNTR_predicted_o, model_data$CHOLNTR)
-caret::confusionMatrix(CHOLRESB_predicted_o, model_data$CHOLRESB)
+caret::confusionMatrix(total_cholesterol_status_predicted_o, model_data$total_cholesterol_status)
+caret::confusionMatrix(total_cholesterol_band_predicted_o, model_data$total_cholesterol_band)
 ```
 
 
-## 3.3 multinomial on CHOLRESB
+## 3.3 multinomial on total_cholesterol_band
 ```{r}
 predicted_tbl_CHOL_m <- 
   predict(multinom_CHOL, model_data, type = "p") %>% 
@@ -205,18 +205,18 @@ predicted_tbl_CHOL_m <-
   mutate(max_value = max(value),
          is_predicted = max_value == value) %>% 
   filter(is_predicted) %>% 
-  mutate(CHOLNTR_predicted = if_else(name > 5, 2, 1))
+  mutate(total_cholesterol_status_predicted = if_else(name > 5, 2, 1))
 
-CHOLRESB_predicted_m <- 
+total_cholesterol_band_predicted_m <- 
   as.factor(as.vector(predicted_tbl_CHOL_m$name)) %>% 
   # add all levels in case some are missing
   forcats::fct_expand("1", "2", "3", "4", "5", "6", "7", "8")
 
-CHOLNTR_predicted_m <- 
-  as.factor(as.vector(predicted_tbl_CHOL_m$CHOLNTR_predicted)) %>% 
+total_cholesterol_status_predicted_m <- 
+  as.factor(as.vector(predicted_tbl_CHOL_m$total_cholesterol_status_predicted)) %>% 
   forcats::fct_expand("1", "2")
 
-caret::confusionMatrix(CHOLNTR_predicted_m, model_data$CHOLNTR)
-caret::confusionMatrix(CHOLRESB_predicted_m, model_data$CHOLRESB)
+caret::confusionMatrix(total_cholesterol_status_predicted_m, model_data$total_cholesterol_status)
+caret::confusionMatrix(total_cholesterol_band_predicted_m, model_data$total_cholesterol_band)
 ```
 
