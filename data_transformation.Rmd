@@ -6,6 +6,10 @@ output: html_document
 ---
 
 ```{r libraries}
+# Suppress start up warnings when loading libraries
+library <- function(...) {
+  suppressPackageStartupMessages(base::library(...))
+}
 # Load in all libraries
 library(tidyverse)
 library(here) # directory referencing
@@ -25,11 +29,7 @@ required_columns <- c(
             'BMISC',
             'AGEC',
             'EIBMR1',
-            'EIBMR1',
             'PHDCMWBC',
-            'ENERGYT1',
-            'ENRGYT1',
-            'SMKDAILY',
             'EXLWTBC', 
             'HDLCHREB',
             'CHOLNTR',
@@ -61,7 +61,25 @@ model_data <-
   # removing the per-day fibre variables
   dplyr::select(-FIBRPER1, -FIBRPER2) %>%
   # dropping observations with NA for any variable, leaves us with 2405 rows
-  drop_na()
+  drop_na() %>% 
+  # renaming to human-readable names
+  rename(LDL_status =	LDLNTR,
+          LDL_band =	LDLRESB,
+          whole_grain =	WHOLGR1N,
+          refined_grain =	REFGRA1N,
+          systolic_blood_pressure =	SYSTOL,
+          sleep_time =	SLPTIME,
+          BMI =	BMISC,
+          age =	AGEC,
+          metabolic_rate =	EIBMR1,
+          weight =	PHDCMWBC,
+          exercise_duration =	EXLWTBC,
+          HDL_status =	HDLCHREB_BINOM,
+          HDL_band =	HDLCHREB,
+          total_cholesterol_status =	CHOLNTR,
+          total_cholesterol_band =	CHOLRESB,
+          fibre =	FIBRPER)
+
 
 ```
 
