@@ -5,33 +5,16 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
-
-
-
-
-```{r setup, include=FALSE}
-# Default knitting options
-knitr::opts_chunk$set(echo=FALSE,
-                      # echo=TRUE, # Echo the code
-                      # tidy=TRUE, # Nicely dity up code
-                      warning=FALSE, # No warnings please 
-                      message=FALSE) # No messages please
-
-options(warn=-1) 
-
+```{r libraries}
 # Suppress start up warnings when loading libraries
 library <- function(...) {
   suppressPackageStartupMessages(base::library(...))
 }
-```
-
-```{r libraries}
 # Load in all libraries
 library(tidyverse)
 library(here) # directory referencing
 library(MASS)
 library(nnet)
-# library(randomForest)
 library(caret)
 library(stargazer) # used by John for nice display of model output
 library(knitr) # used for nice display of tables
@@ -44,43 +27,67 @@ library(boot)
 
 ```{r load data}
 load(file = here("data", "model_data.Rdata"))
+load(file = "models.Rdata")
 ```
 
 
-### GLM
-```{r, results="hide"}
-model_glm <- glm(LDL_status ~  whole_grain + refined_grain + BMI + age + sleep_time + systolic_blood_pressure + exercise_duration, family = "binomial", data = model_data)
-```
+### GLMs
+
+#### LDL
 
 ```{r,results="asis", eval=TRUE, echo=FALSE}
-stargazer(model_glm, type = "html")
+coef(summary(glm_LDL)) %>%
+  as_tibble(rownames = "Variable") %>%
+  rename("p Value" = "Pr(>|z|)",
+         "Z Value" = "z value") %>%
+  kable(digits = c(0, 3, 3, 3, 3), format = "pipe", caption = "GLM on LDL_status")
+```
+
+#### HDL
+
+```{r,results="asis", eval=TRUE, echo=FALSE}
+coef(summary(glm_HDL)) %>%
+  as_tibble(rownames = "Variable") %>%
+  rename("p Value" = "Pr(>|z|)",
+         "Z Value" = "z value") %>%
+  kable(digits = c(0, 3, 3, 2, 2), format = "pipe", caption = "GLM on HDL_status")
+```
+
+#### Total Cholesterol
+
+```{r,results="asis", eval=TRUE, echo=FALSE}
+coef(summary(glm_CHOL)) %>%
+  as_tibble(rownames = "Variable") %>%
+  rename("p Value" = "Pr(>|z|)",
+         "Z Value" = "z value") %>%
+  kable(digits = c(0, 3, 3, 2, 2), format = "pipe", caption = "GLM on total_cholesterol_status")
 ```
 
 
 ### Ordinal Regression
 ```{r,results="asis", eval=TRUE, echo=FALSE}
-ordinal_1 <- polr(LDL_band ~ whole_grain + refined_grain + BMI + age + sleep_time + systolic_blood_pressure + exercise_duration, data = model_data)
+ordinal_1 <- polr(LDL_band ~ WG + RG + BMI + age + sleep_time + systolic_blood_pressure + exercise_duration, data = model_data)
 ctable <- coef(summary(ordinal_1))
 p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
-ctable <- cbind(ctable, "p value" = p)
+ctable <- cbind(ctable, "p Value" = p)
 
 kable(ctable,digits=2, format = "pipe")
 ```
 
 ## Multinomial Regression
 ```{r}
-nom_nom_1 <- multinom(LDL_band ~ whole_grain + refined_grain + BMI + age + sleep_time + systolic_blood_pressure + exercise_duration, data = model_data, trace=FALSE)
+nom_nom_1 <- multinom(LDL_band ~ WG + RG + BMI + age + sleep_time + systolic_blood_pressure + exercise_duration, data = model_data, trace=FALSE)
 
 kable(coef(summary(nom_nom_1)), digits = 4, format="pipe", caption = "Coefficients")
 
 # calculate p-values
 zvalues <- summary(nom_nom_1)$coefficients / summary(nom_nom_1)$standard.errors
-kable(pnorm(abs(zvalues), lower.tail=FALSE)*2, digits = 2, format="pipe", caption = "P values")
+kable(pnorm(abs(zvalues), lower.tail=FALSE)*2, digits = c(0, 3, 3, 2, 2), format="pipe", caption = "P values")
 
 ```
 #ROC FOR GLM
 ```{r}
-predicted_probabilities <- predict(model_glm, type = "response")
+predicted_probabilities <- predict(glm_LDL, type = "response")
 roc_data <- roc(model_data$LDL_status, predicted_probabilities)
 plot(roc_data, main = "ROC Curve", col = "blue")
 auc_score <- auc(roc_data)
@@ -89,7 +96,7 @@ print(paste("AUC:", auc_score))
 
 ```{r}
 #5 highest leverage points
-plot(model_glm,which=4,id.n=5)
+plot(glm_LDL,which=4,id.n=5)
 ```
 
 #EValuation for Ordinal Regression
