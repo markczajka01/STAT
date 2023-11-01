@@ -27,7 +27,7 @@ required_columns <- c(
             'SYSTOL',
             'SLPTIME',
             'BMISC',
-            'ageC',
+            'AGEC',
             'EIBMR1',
             'PHDCMWBC',
             'EXLWTBC', 
@@ -40,8 +40,8 @@ required_columns <- c(
 model_data <-  
   tech_nutr %>%
   inner_join(tech_biom, by = "ABSPID") %>% 
-  dplyr::select(required_columns) %>% 
-  filter(ageC >= 18,
+  dplyr::select(all_of(required_columns)) %>% 
+  filter(AGEC >= 18,
          # dropping observations below Goldberg cut-off
          EIBMR1 >= 0.9) %>% 
   mutate(LDLNTR = droplevels(LDLNTR),
@@ -54,7 +54,7 @@ model_data <-
          EXLWTBC = as.numeric(EXLWTBC),
          SYSTOL = as.numeric(SYSTOL),
          SLPTIME = as.numeric(SLPTIME),
-         ageC = as.numeric(ageC),
+         AGEC = as.numeric(AGEC),
          # avg energy from fibre across the two days
          FIBRPER = (FIBRPER1 + FIBRPER2)/2
          ) %>% 
@@ -65,12 +65,12 @@ model_data <-
   # renaming to human-readable names
   rename(LDL_status =	LDLNTR,
           LDL_band =	LDLRESB,
-          whole_grain =	WHOLGR1N,
-          refined_grain =	REFGRA1N,
+          WG =	WHOLGR1N,
+          RG =	REFGRA1N,
           systolic_blood_pressure =	SYSTOL,
           sleep_time =	SLPTIME,
           BMI =	BMISC,
-          age =	ageC,
+          age =	AGEC,
           metabolic_rate =	EIBMR1,
           weight =	PHDCMWBC,
           exercise_duration =	EXLWTBC,
