@@ -1,0 +1,161 @@
+---
+title: "EDA"
+author: "Group"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# Default knitting options
+knitr::opts_chunk$set(echo=TRUE, # Echo the code
+                      tidy=TRUE, # Nicely dity up code
+                      warning=FALSE, # No warnings please
+                      message=FALSE) # No messages please
+
+options(warn=-1)
+
+# Suppress start up warnings when loading libraries
+library <- function(...) {
+  suppressPackageStartupMessages(base::library(...))
+}
+```
+
+```{r libraries}
+# Load in all libraries
+library(tidyverse)
+library(here)      # directory referencing
+library(readxl)    # reading Excel files
+library(janitor)   # data cleaning
+library(stringr)   # string manimpuation
+library(tidyr)     # new tidy functions
+library(skimr)
+library(caret)
+library(corrplot)
+
+
+```
+
+
+
+```{r}
+
+
+load(file = here("data", "tech_data.Rdata"))
+
+
+aboriginal_cohort <- read_csv(file = here("data", "aboriginal_cohort.csv"))
+
+tech_nutr_by_person_joined =
+  tech_nutr %>%
+  inner_join(tech_biom, by = "ABSPID") %>%
+  filter(!is.na(LDL_status),
+         age >= 18) %>%
+  mutate(data_source = 'AHS',
+         WG_PROP = WG/GRAINS1N)
+
+aboriginal_cohort_filtered =
+  aboriginal_cohort %>%
+  filter(ageEC >= 18,
+         LDL_status %in% c(1,2)) %>%
+  rename(age = ageEC) %>%
+  mutate(data_source = 'Aboriginal',
+         WG_PROP = WG/GRAINS1N)
+
+required_columns <- c(
+            'data_source',
+            'LDL_status',
+            'LDL_band',
+            'WG',
+            'WG_PROP',
+            'RG',
+            'systolic_blood_pressure',
+            'sleep_time',
+            'BMI',
+            'age',
+            'metabolic_rate')
+
+merged_data <-
+  tech_nutr_by_person_joined %>%
+  select(required_columns) %>%
+  rbind(select(aboriginal_cohort_filtered, required_columns)) %>%
+  mutate(LDL_status = droplevels(LDL_status))
+
+merged_data <- merged_data %>% drop_na()
+
+
+merged_data %>%
+  ggplot(aes(x = age, col = data_source)) +
+  geom_density()
+
+merged_data <- merged_data %>%
+  mutate(below_goldberg = metabolic_rate < 0.9)
+
+merged_data %>%
+  group_by(data_source) %>%
+  summarise(num_goldberg_dropped = sum(below_goldberg),
+            num_total = n(),
+            goldberg_dropped_pct = num_goldberg_dropped/num_total)
+
+merged_data %>% skim
+
+merged_data <-
+  filter(merged_data, !below_goldberg) %>%
+  mutate(LDL_numeric = as.numeric(LDL_band)) %>%
+  filter(data_source == 'AHS')
+
+merged_data %>%
+  select(where(is.numeric))
+
+cor_matrix <- merged_data %>%
+  dplyr::select(where(is.numeric)) %>%
+  cor()
+
+corrplot(cor_matrix)
+
+```
+
+
+```{r}
+
+
+merged_data %>%
+  dplyr::select(where(is.numeric)) %>%
+  colnames()
+
+
+ggplot(merged_data, aes(x = LDL_status, y = WG)) +
+    geom_boxplot()
+
+ggplot(merged_data, aes(x = LDL_status, y = WG_PROP)) +
+    geom_boxplot()
+
+ggplot(merged_data, aes(x = LDL_status, y = RG)) +
+    geom_boxplot()
+
+ggplot(merged_data, aes(x = LDL_status, y = systolic_blood_pressure)) +
+    geom_boxplot()
+
+ggplot(merged_data, aes(x = LDL_status, y = sleep_time)) +
+    geom_boxplot()
+
+ggplot(merged_data, aes(x = LDL_status, y = BMI)) +
+    geom_boxplot()
+
+ggplot(merged_data, aes(x = LDL_status, y = age)) +
+    geom_boxplot()
+
+ggplot(merged_data, aes(x = LDL_status, y = metabolic_rate)) +
+    geom_boxplot()
+
+ggplot(merged_data, aes(x = LDL_status, y = LDL_numeric)) +
+    geom_boxplot()
+
+
+for (y in list('WG', 'RG')) {
+  ggplot(merged_data, aes(x = LDL_status, y = eval(parse(y)))) +
+    geom_boxplot()
+}
+
+
+```
+

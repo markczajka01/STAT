@@ -55,7 +55,7 @@ coef(summary(glm_LDL)) %>%
   as_tibble(rownames = "Variable") %>%
   rename("p Value" = "Pr(>|z|)",
          "Z Value" = "z value") %>%
-  kable(digits = c(0, 3, 3, 3, 3), format = "pipe", caption = "GLM on LDL_status")
+  kable(digits = c(0, 3, 3, 2, 2), format = "pipe", caption = "GLM on LDL_status")
 ```
 
 #### HDL
@@ -167,7 +167,9 @@ pvalues %>%
 
 ```
 
-#ROC FOR GLM
+# ROC FOR GLM
+## LDL
+
 ```{r}
 predicted_probabilities <- predict(glm_LDL, type = "response")
 roc_data <- roc(model_data$LDL_status, predicted_probabilities)
@@ -175,6 +177,15 @@ plot(roc_data, main = "ROC Curve", col = "blue")
 auc_score <- auc(roc_data)
 print(paste("AUC:", auc_score))
 ```
+## HDL
+```{r}
+predicted_probabilities <- predict(glm_HDL, type = "response")
+roc_data <- roc(model_data$HDL_status, predicted_probabilities)
+plot(roc_data, main = "ROC Curve", col = "blue")
+auc_score <- auc(roc_data)
+print(paste("AUC:", auc_score))
+```
+
 
 ```{r}
 #5 highest leverage points

@@ -47,7 +47,7 @@ model_data <-
   mutate(LDLNTR = droplevels(LDLNTR),
          LDLRESB = droplevels(LDLRESB),
          # abnormal HDL when HDLCHREB = 1 (< 1 mmol)
-         HDLCHREB_BINOM = as.factor(as.numeric(HDLCHREB) == 1),
+         HDLCHREB_BINOM = as.factor(as.numeric(HDLCHREB) != 1),
          HDLCHREB = droplevels(HDLCHREB),
          CHOLNTR = droplevels(CHOLNTR),
          CHOLRESB = droplevels(CHOLRESB),

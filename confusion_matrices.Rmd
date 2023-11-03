@@ -8,8 +8,8 @@ output: html_document
 
 ```{r setup, include=FALSE}
 # Default knitting options
-knitr::opts_chunk$set(echo=TRUE, # Whether to echo the code
-                      tidy=TRUE, # Nicely tidy up code
+knitr::opts_chunk$set(echo=FALSE, # Whether to echo the code
+                      # tidy=TRUE, # Nicely tidy up code
                       warning=FALSE, # No warnings please 
                       message=FALSE) # No messages please
 
@@ -27,6 +27,11 @@ library(tidyverse)
 library(here) # directory referencing
 library(stargazer) # used by John for nice display of model output
 library(knitr) # used for nice display of tables
+library(dplyr)
+library(ConfusionTableR)
+library(caret)
+library(tidyr)
+library(cvms)
 ```
 
 ```{r load data and models}
@@ -40,6 +45,21 @@ load(file = "models.Rdata")
 predicted_glm_LDL <- predict(glm_LDL, model_data, type = "response")
 predicted_glm_LDL <- as.factor(round(predicted_glm_LDL, 0) + 1)
 caret::confusionMatrix(predicted_glm_LDL, model_data$LDL_status)
+
+
+
+png(here("plots", "glm_LDL_confusion_matrix.png"), width = 960, height = 960, pointsize = 24)
+ConfusionTableR::binary_visualiseR(train_labels = predicted_glm_LDL,
+                                   truth_labels= model_data$LDL_status,
+                                   class_label1 = "Normal", 
+                                   class_label2 = "Abnormal",
+                                   quadrant_col1 = "#28ACB4", 
+                                   quadrant_col2 = "#4397D2", 
+                                   custom_title = "LDL Logistic Confusion Matrix", 
+                                   text_col= "black")
+
+
+
 ```
 
 ## 1.2 Ordinal on LDL_band
@@ -66,6 +86,48 @@ LDL_status_predicted_o <-
 
 caret::confusionMatrix(LDL_status_predicted_o, model_data$LDL_status)
 caret::confusionMatrix(LDL_band_predicted_o, model_data$LDL_band)
+
+png(here("plots", "ordinal_LDL_confusion_matrix.png"), width = 960, height = 960, pointsize = 24)
+ConfusionTableR::binary_visualiseR(train_labels = LDL_status_predicted_o,
+                                   truth_labels= model_data$LDL_status,
+                                   class_label1 = "Normal", 
+                                   class_label2 = "Abnormal",
+                                   quadrant_col1 = "#28ACB4", 
+                                   quadrant_col2 = "#4397D2", 
+                                   custom_title = "LDL Ordinal Confusion Matrix", 
+                                   text_col= "black")
+
+
+```
+
+### 1.2.2 ordinal LDL - nicely presented confusion matrix
+
+```{r}
+
+conf_mat <- cvms::confusion_matrix(targets = model_data$LDL_band,
+                             predictions = LDL_band_predicted_o)
+conf_mat$`Confusion Matrix`[[1]]
+
+plot_confusion_matrix(
+  conf_mat$`Confusion Matrix`[[1]],
+  # font_counts = font(
+  #   size = 10
+  # ),
+  class_order = as.character(c(8,7,6,5,4,3,2,1)),
+  add_normalized = FALSE,
+  add_col_percentages = FALSE,
+  add_row_percentages = FALSE
+)
+
+caret_conf_mat <- caret::confusionMatrix(LDL_band_predicted_o, model_data$LDL_band)
+
+
+caret_conf_mat$overall %>% 
+  janitor::clean_names() %>% 
+  as.list() %>% 
+  as_tibble() %>% 
+  dplyr::select(Accuracy = accuracy, "Highest Class Proportion" = accuracy_null, "Accuracy p Value" = accuracy_p_value) %>% 
+  kable(digits = 2, format="pipe")
 ```
 
 
@@ -92,8 +154,11 @@ LDL_status_predicted_m <-
   forcats::fct_expand("1", "2")
 
 caret::confusionMatrix(LDL_status_predicted_m, model_data$LDL_status)
-caret::confusionMatrix(LDL_band_predicted_m, model_data$LDL_band)
+
+
+
 ```
+
 
 # Part 2 of 3: HDL
 ## 2.1 GLM on HDL_status
@@ -128,7 +193,35 @@ HDLNTR_predicted_o <-
 caret::confusionMatrix(HDLNTR_predicted_o, model_data$HDL_status)
 caret::confusionMatrix(HDLRESB_predicted_o, model_data$HDL_band)
 ```
+### 2.2.2 ordinal HDL - nicely presented confusion matrix
 
+```{r}
+
+conf_mat <- cvms::confusion_matrix(targets = model_data$HDL_band,
+                             predictions = HDLRESB_predicted_o)
+conf_mat$`Confusion Matrix`[[1]]
+
+plot_confusion_matrix(
+  conf_mat$`Confusion Matrix`[[1]],
+  # font_counts = font(
+  #   size = 10
+  # ),
+  class_order = as.character(c(6,5,4,3,2,1)),
+  add_normalized = FALSE,
+  add_col_percentages = FALSE,
+  add_row_percentages = FALSE
+)
+
+caret_conf_mat <- caret::confusionMatrix(HDLRESB_predicted_o, model_data$HDL_band)
+
+
+caret_conf_mat$overall %>% 
+  janitor::clean_names() %>% 
+  as.list() %>% 
+  as_tibble() %>% 
+  dplyr::select(Accuracy = accuracy, "Highest Class Proportion" = accuracy_null, "Accuracy p Value" = accuracy_p_value) %>% 
+  kable(digits = 2, format="pipe")
+```
 
 ## 2.3 multinomial on HDL_band
 ```{r}
