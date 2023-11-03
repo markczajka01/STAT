@@ -50,7 +50,7 @@ load(file = "models.Rdata")
 
 #### LDL
 
-```{r,results="asis", eval=TRUE, echo=FALSE}
+```{r,results="asis", eval=TRUE}
 coef(summary(glm_LDL)) %>%
   as_tibble(rownames = "Variable") %>%
   rename("p Value" = "Pr(>|z|)",
@@ -60,7 +60,7 @@ coef(summary(glm_LDL)) %>%
 
 #### HDL
 
-```{r,results="asis", eval=TRUE, echo=FALSE}
+```{r,results="asis", eval=TRUE}
 coef(summary(glm_HDL)) %>%
   as_tibble(rownames = "Variable") %>%
   rename("p Value" = "Pr(>|z|)",
@@ -70,7 +70,7 @@ coef(summary(glm_HDL)) %>%
 
 #### Total Cholesterol
 
-```{r,results="asis", eval=TRUE, echo=FALSE}
+```{r,results="asis", eval=TRUE}
 coef(summary(glm_CHOL)) %>%
   as_tibble(rownames = "Variable") %>%
   rename("p Value" = "Pr(>|z|)",
@@ -82,7 +82,7 @@ coef(summary(glm_CHOL)) %>%
 ### Ordinal Regressions
 
 #### LDL
-```{r,results="asis", eval=TRUE, echo=FALSE}
+```{r,results="asis", eval=TRUE}
 ctable <- coef(summary(ordinal_LDL))
 p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
 ctable <- cbind(ctable, "p Value" = p)
@@ -94,7 +94,7 @@ ctable %>% as_tibble(rownames = "Variable") %>%
 ```
 
 ####HDL
-```{r,results="asis", eval=TRUE, echo=FALSE}
+```{r,results="asis", eval=TRUE}
 ctable <- coef(summary(ordinal_HDL))
 p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
 ctable <- cbind(ctable, "p Value" = p)
@@ -106,7 +106,7 @@ ctable %>% as_tibble(rownames = "Variable") %>%
 ```
 
 #### Total Cholesterol
-```{r,results="asis", eval=TRUE, echo=FALSE}
+```{r,results="asis", eval=TRUE}
 ctable <- coef(summary(ordinal_CHOL))
 p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
 ctable <- cbind(ctable, "p Value" = p)

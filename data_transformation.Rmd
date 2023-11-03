@@ -81,8 +81,6 @@ model_data <-
           total_cholesterol_status =	CHOLNTR,
           total_cholesterol_band =	CHOLRESB,
           fibre =	FIBRPER)
-
-
 ```
 
 

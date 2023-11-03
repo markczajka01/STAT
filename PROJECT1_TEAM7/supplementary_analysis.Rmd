@@ -1,0 +1,210 @@
+---
+title: "Group 7 Supplementary R Analysis"
+author: "Group 7"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# Default knitting options
+knitr::opts_chunk$set(echo=TRUE, # Whether to echo the code
+                      tidy=TRUE, # Nicely tidy up code
+                      warning=FALSE, # No warnings please 
+                      message=FALSE) # No messages please
+
+options(warn=-1) 
+```
+
+```{r libraries}
+# Suppress start up warnings when loading libraries
+library <- function(...) {
+  suppressPackageStartupMessages(base::library(...))
+}
+# Load in all libraries
+library(tidyverse)
+library(here) # directory referencing
+library(MASS) # ordinal regression
+library(nnet) # multinomial regression
+library(caret)
+library(knitr) # used for nice display of tables
+```
+
+# Data transformations
+
+```{r creating model data set}
+# This contains tech_biom and tech_nutr from Assignment 1
+load(file = here("data", "tech_data_selected.Rdata"))
+
+# The final columns chosen for our analysis
+required_columns <- c(
+            'LDLNTR',
+            'LDLRESB',
+            'WHOLGR1N',
+            'REFGRA1N',
+            'SYSTOL',
+            'SLPTIME',
+            'BMISC',
+            'AGEC',
+            'EIBMR1',
+            'PHDCMWBC',
+            'EXLWTBC', 
+            'HDLCHREB',
+            'CHOLNTR',
+            'CHOLRESB',
+            'FIBRPER1',
+            'FIBRPER2')
+
+# Data transformations and making variables human-readable 
+model_data <-  
+  tech_nutr %>%
+  inner_join(tech_biom, by = "ABSPID") %>% 
+  dplyr::select(all_of(required_columns)) %>% 
+  filter(AGEC >= 18,
+         # dropping observations below Goldberg cut-off
+         EIBMR1 >= 0.9) %>% 
+  mutate(LDLNTR = droplevels(LDLNTR),
+         LDLRESB = droplevels(LDLRESB),
+         # abnormal HDL when HDLCHREB = 1 (< 1 mmol)
+         HDLCHREB_BINOM = as.factor(as.numeric(HDLCHREB) != 1),
+         HDLCHREB = droplevels(HDLCHREB),
+         CHOLNTR = droplevels(CHOLNTR),
+         CHOLRESB = droplevels(CHOLRESB),
+         EXLWTBC = as.numeric(EXLWTBC),
+         SYSTOL = as.numeric(SYSTOL),
+         SLPTIME = as.numeric(SLPTIME),
+         AGEC = as.numeric(AGEC),
+         # avg energy from fibre across the two days
+         FIBRPER = (FIBRPER1 + FIBRPER2)/2
+         ) %>% 
+  # removing the per-day fibre variables
+  dplyr::select(-FIBRPER1, -FIBRPER2) %>%
+  # dropping observations with NA for any variable, leaves us with 2405 rows
+  drop_na() %>% 
+  # renaming to human-readable names
+  rename(LDL_status =	LDLNTR,
+          LDL_band =	LDLRESB,
+          WG =	WHOLGR1N,
+          RG =	REFGRA1N,
+          systolic_blood_pressure =	SYSTOL,
+          sleep_time =	SLPTIME,
+          BMI =	BMISC,
+          age =	AGEC,
+          metabolic_rate =	EIBMR1,
+          weight =	PHDCMWBC,
+          exercise_duration =	EXLWTBC,
+          HDL_status =	HDLCHREB_BINOM,
+          HDL_band =	HDLCHREB,
+          total_cholesterol_status =	CHOLNTR,
+          total_cholesterol_band =	CHOLRESB,
+          fibre =	FIBRPER)
+```
+
+
+# LDL
+## GLM on LDL_status
+```{r}
+glm_LDL <- glm(LDL_status ~  WG + RG + fibre + BMI + age + sleep_time + systolic_blood_pressure + exercise_duration, family = "binomial", data = model_data)
+```
+
+### Table 1. Logistic model with LDL-cholesterol status as the dependent variable
+```{r,results="asis", eval=TRUE}
+coef(summary(glm_LDL)) %>%
+  as_tibble(rownames = "Variable") %>%
+  rename("p Value" = "Pr(>|z|)",
+         "Z Value" = "z value") %>%
+  kable(digits = c(0, 3, 3, 2, 2), format = "pipe", caption = "GLM on LDL_status")
+```
+
+
+## Ordinal on LDL_band
+```{r}
+ordinal_LDL <- polr(LDL_band ~ WG + RG + fibre + BMI + age + sleep_time + systolic_blood_pressure + exercise_duration, data = model_data)
+```
+
+### Table 2. Ordinal model on LDL
+```{r,results="asis", eval=TRUE}
+ctable <- coef(summary(ordinal_LDL))
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+ctable <- cbind(ctable, "p Value" = p)
+
+ctable %>% as_tibble(rownames = "Variable") %>%
+  rename("t Value" = "t value",
+         "Estimate" = "Value") %>%
+  kable(digits = c(0, 3, 3, 2, 2), format = "pipe", caption = "Ordinal on LDL")
+```
+
+## Multinomial on LDL_band
+```{r}
+multinom_LDL <- multinom(LDL_band ~ WG + RG + fibre + BMI + age + sleep_time + systolic_blood_pressure + exercise_duration, data = model_data, trace=FALSE)
+```
+
+### Table 3. Multinomial model on LDL
+```{r}
+coef(summary(multinom_LDL)) %>% 
+  as_tibble(rownames = "LDL_band") %>% 
+  kable(digits = 3, format="pipe", caption = "Estimates")
+
+# calculate p-values
+zvalues <- summary(multinom_LDL)$coefficients / summary(multinom_LDL)$standard.errors
+pvalues <- pnorm(abs(zvalues), lower.tail=FALSE)*2
+
+pvalues %>%  
+  as_tibble(rownames = "LDL_band") %>% 
+  kable(digits = 2, format="pipe", caption = "p Values")
+
+```
+
+# HDL
+## GLM on HDL_status
+```{r}
+glm_HDL <- glm(HDL_status ~  WG + RG + fibre + BMI + age + sleep_time + systolic_blood_pressure + exercise_duration, family = "binomial", data = model_data)
+```
+
+### Table 4. GLM model on HDL
+```{r,results="asis", eval=TRUE}
+coef(summary(glm_HDL)) %>%
+  as_tibble(rownames = "Variable") %>%
+  rename("p Value" = "Pr(>|z|)",
+         "Z Value" = "z value") %>%
+  kable(digits = c(0, 3, 3, 2, 2), format = "pipe", caption = "GLM on HDL_status")
+```
+
+## Ordinal on HDL_band
+```{r}
+ordinal_HDL <- polr(HDL_band ~ WG + RG + fibre + BMI + age + sleep_time + systolic_blood_pressure + exercise_duration, data = model_data)
+```
+
+### Table 5. Ordinal model on HDL
+```{r,results="asis", eval=TRUE}
+ctable <- coef(summary(ordinal_HDL))
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+ctable <- cbind(ctable, "p Value" = p)
+
+ctable %>% as_tibble(rownames = "Variable") %>%
+  rename("t Value" = "t value",
+         "Estimate" = "Value") %>%
+  kable(digits = c(0, 3, 3, 2, 2), format = "pipe", caption = "Ordinal on HDL")
+```
+
+## Multinomial on HDL_band
+```{r}
+multinom_HDL <- multinom(HDL_band ~ WG + RG + fibre + BMI + age + sleep_time + systolic_blood_pressure + exercise_duration, data = model_data, trace=FALSE)
+```
+
+### Table 6. Multinomial model on HDL
+```{r}
+coef(summary(multinom_HDL)) %>% 
+  as_tibble(rownames = "HDL_band") %>% 
+  kable(digits = 3, format="pipe", caption = "Estimates")
+
+# calculate p-values
+zvalues <- summary(multinom_HDL)$coefficients / summary(multinom_HDL)$standard.errors
+pvalues <- pnorm(abs(zvalues), lower.tail=FALSE)*2
+
+pvalues %>%  
+  as_tibble(rownames = "HDL_band") %>% 
+  kable(digits = 2, format="pipe", caption = "p Values")
+
+```
+
+
