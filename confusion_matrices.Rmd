@@ -220,7 +220,7 @@ caret_conf_mat$overall %>%
   as.list() %>% 
   as_tibble() %>% 
   dplyr::select(Accuracy = accuracy, "Highest Class Proportion" = accuracy_null, "Accuracy p Value" = accuracy_p_value) %>% 
-  kable(digits = 2, format="pipe")
+  kable(digits = 3, format="pipe")
 ```
 
 ## 2.3 multinomial on HDL_band
@@ -247,6 +247,35 @@ HDLNTR_predicted_m <-
 caret::confusionMatrix(HDLNTR_predicted_m, model_data$HDL_status)
 caret::confusionMatrix(HDLRESB_predicted_m, model_data$HDL_band)
 
+```
+
+### 2.3.2 multinomial HDL - nicely presented confusion matrix
+
+```{r}
+
+conf_mat <- cvms::confusion_matrix(targets = model_data$HDL_band,
+                             predictions = HDLRESB_predicted_m)
+
+plot_confusion_matrix(
+  conf_mat$`Confusion Matrix`[[1]],
+  # font_counts = font(
+  #   size = 10
+  # ),
+  class_order = as.character(c(6,5,4,3,2,1)),
+  add_normalized = FALSE,
+  add_col_percentages = FALSE,
+  add_row_percentages = FALSE
+)
+
+caret_conf_mat <- caret::confusionMatrix(HDLRESB_predicted_m, model_data$HDL_band)
+
+
+caret_conf_mat$overall %>% 
+  janitor::clean_names() %>% 
+  as.list() %>% 
+  as_tibble() %>% 
+  dplyr::select(Accuracy = accuracy, "Highest Class Proportion" = accuracy_null, "Accuracy p Value" = accuracy_p_value) %>% 
+  kable(digits = 3, format="pipe")
 ```
 
 

@@ -17,7 +17,9 @@ library(here) # directory referencing
 
 
 ```{r creating model data set}
-load(file = here("data", "tech_data.Rdata"))
+# load(file = here("data", "tech_data.Rdata"))
+# save(tech_biom, tech_nutr, file = here("data", "tech_data_selected.Rdata"))
+load(file = here("data", "tech_data_selected.Rdata"))
 
 required_columns <- c(
             'LDLNTR',
